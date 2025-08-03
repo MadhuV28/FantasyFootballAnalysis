@@ -366,13 +366,9 @@
 
 
 
-
-
-
-
 import pandas as pd
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, messagebox
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.pyplot as plt
 import mplcursors
@@ -414,13 +410,12 @@ df['Group'] = df['Rank'].apply(rank_group)
 active_cursors = []
 plot_canvas = None
 
-# --- Global sets to persistently track highlighted and selected players ---
 highlighted_players_set = set()
 selected_players_set = set()
 
 window = tk.Tk()
 window.title("Fantasy Analytics KMeans Clustering")
-window.geometry("900x700")
+window.geometry("1000x750")
 
 window.rowconfigure(0, weight=1)
 window.columnconfigure(0, weight=1)
@@ -496,11 +491,11 @@ def update_axis_options(event, axis_var, entry, dropdown, columns):
 x_entry.bind('<KeyRelease>', lambda e: update_axis_options(e, x_var, x_entry, x_dropdown, columns))
 y_entry.bind('<KeyRelease>', lambda e: update_axis_options(e, y_var, y_entry, y_dropdown, columns))
 
-# --- Number of Clusters ---
-ttk.Label(content_frame, text="Clusters:").grid(row=4, column=0, sticky='ew')
+# --- Number of Clusters (placed to the right of axis selectors, row 2/3, col 3) ---
+ttk.Label(content_frame, text="Clusters:").grid(row=2, column=3, sticky='ew', padx=5)
 cluster_var = tk.IntVar(value=3)
-cluster_spin = ttk.Spinbox(content_frame, from_=2, to=10, textvariable=cluster_var, width=5)
-cluster_spin.grid(row=4, column=1, sticky='nsew')
+cluster_spin = ttk.Spinbox(content_frame, from_=2, to=20, textvariable=cluster_var, width=5)
+cluster_spin.grid(row=3, column=3, sticky='nsew', padx=5)
 
 # --- Search Entry for Player(s) ---
 player_search_var = tk.StringVar()
@@ -616,7 +611,7 @@ def on_player_listbox_select(event):
             selected_players_set.remove(p)
     for p in selected_players:
         selected_players_set.add(p)
-    update_highlight_player_listbox()  # <-- Add this line
+    update_highlight_player_listbox()
 
 def update_highlight_player_listbox(*args):
     pos_selected = get_selected_positions()
@@ -627,7 +622,6 @@ def update_highlight_player_listbox(*args):
         filtered = filtered[filtered['Position'].isin(pos_selected)]
     if year_selected:
         filtered = filtered[filtered['Year'].astype(str).isin(year_selected)]
-    # If any players are selected, only show those. Otherwise, show all possible players.
     if selected_players_set:
         player_options = sorted(selected_players_set)
     else:
@@ -664,14 +658,12 @@ def on_highlight_listbox_select(event):
         highlighted_players_set.add(p)
 
 def sync_global_sets_with_visible_players():
-    # Sync selected_players_set
     visible_players = set([player_listbox.get(i) for i in range(player_listbox.size())])
     to_remove = set()
     for p in selected_players_set:
         if p not in visible_players:
             to_remove.add(p)
     selected_players_set.difference_update(to_remove)
-    # Sync highlighted_players_set
     visible_highlight_players = set([highlight_player_listbox.get(i) for i in range(highlight_player_listbox.size())])
     to_remove_highlight = set()
     for p in highlighted_players_set:
@@ -697,7 +689,6 @@ def plot_clusters():
         highlight_players = get_highlight_players()
 
         filtered = df.copy()
-        # Always filter by year and position first, then by selected players
         if pos_selected:
             filtered = filtered[filtered['Position'].isin(pos_selected)]
         if year_selected:
@@ -713,7 +704,7 @@ def plot_clusters():
             filtered[x] = pd.to_numeric(filtered[x], errors='raise')
             filtered[y] = pd.to_numeric(filtered[y], errors='raise')
         except Exception:
-            tk.messagebox.showerror(
+            messagebox.showerror(
                 "Invalid Axis Selection",
                 f"Selected axis columns must be numeric.\nYou chose:\nX: {x}\nY: {y}"
             )
@@ -823,7 +814,6 @@ def plot_clusters():
             plot_canvas.get_tk_widget().destroy()
         plot_canvas_new = FigureCanvasTkAgg(fig, master=content_frame)
         plot_canvas_new.get_tk_widget().grid(row=8, column=0, columnspan=4, sticky='nsew')
-        # Remove fixed width/height to allow expansion
         plot_canvas_new.draw()
         plot_canvas = plot_canvas_new
     except Exception as e:
@@ -835,7 +825,6 @@ def plot_clusters():
 for i in range(8):
     content_frame.rowconfigure(i, weight=0)
 content_frame.rowconfigure(8, weight=1)
-
 for i in range(4):
     content_frame.columnconfigure(i, weight=1)
 
@@ -852,22 +841,6 @@ update_player_listbox()
 update_highlight_player_listbox()
 
 window.mainloop()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

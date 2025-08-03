@@ -12,10 +12,13 @@ position_info = {
 
 target = 'Fantasy Points'  # or 'Fantasy Points/Game' or 'PPG'
 
+output_dir = 'scripts/ModelingAnalysis/PosSpecific'
+os.makedirs(output_dir, exist_ok=True)
+
 for pos, info in position_info.items():
     print(f"\n=== Top correlated features for {pos}s (using all subfolder files) ===")
     # Find all relevant files for this position
-    file_pattern = os.path.join('DataInfo', info['folder'], info['pattern'])
+    file_pattern = os.path.join('/Users/mvuyyuru/FantasyAnalyticsProject/DataInfo', info['folder'], info['pattern'])
     files = glob.glob(file_pattern)
     if not files:
         print(f"No files found for {pos} in {info['folder']}")
@@ -46,6 +49,6 @@ for pos, info in position_info.items():
         corrs = pos_df[numeric_cols].corr()[target].sort_values(ascending=False)
         print(corrs.head(20))
         # Save to CSV for review
-        corrs.to_csv(f'scripts/ModelingAnalysis/combined/{pos}_feature_correlations.csv')
+        corrs.to_csv(f'{output_dir}/{pos}_feature_correlations.csv')
     else:
         print(f"Target '{target}' not found in numeric columns for {pos}s.")

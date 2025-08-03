@@ -1,12 +1,20 @@
+# Use dimensionality reduction instead of dropping.
+
+# PCA or feature selection via Random Forest/XGBoost feature importance keeps multicollinear features but reduces redundancy.
+
 import pandas as pd
 import numpy as np
 import glob
 import os
 import joblib
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import r2_score, mean_squared_error
 from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
+
+print("Current working directory:", os.getcwd())
 
 positions = ['QB', 'RB', 'WR', 'TE']
 target = 'Fantasy Points'
@@ -34,8 +42,8 @@ features_dict = {
 os.makedirs("models", exist_ok=True)
 
 for pos in positions:
-    print(f"\n--- {pos} Linear Regression ---")
-    folder = f'DataInfo/{pos.lower()}'
+    print(f"\n--- {pos} Pipeline ---")
+    folder = f'/Users/mvuyyuru/FantasyAnalyticsProject/DataInfo/{pos.lower()}'
     pattern = f'*{pos}_merged*.csv'
     file_pattern = os.path.join(folder, pattern)
     files = glob.glob(file_pattern)
@@ -76,32 +84,42 @@ for pos in positions:
     X = pos_df[features]
     y = pos_df[target]
 
-    # Impute missing values
+    # Impute and scale
     imputer = SimpleImputer(strategy='mean')
+    scaler = StandardScaler()
     X = pd.DataFrame(imputer.fit_transform(X), columns=features)
+    X_scaled = scaler.fit_transform(X)
     y = y.fillna(y.mean())
 
-    print(f"Rows after imputation: {len(X)}")
-    if len(X) < 10:
-        print("Not enough data for", pos)
-        continue
+    # PCA: keep enough components to explain 95% of variance
+    pca = PCA(n_components=0.95, svd_solver='full')
+    X_pca = pca.fit_transform(X_scaled)
+    print(f"PCA: Reduced from {X.shape[1]} to {X_pca.shape[1]} components.")
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    # Model training
+    X_train, X_test, y_train, y_test = train_test_split(X_pca, y, test_size=0.2, random_state=42)
     model = LinearRegression()
     model.fit(X_train, y_train)
     y_pred = model.predict(X_test)
     rmse = np.sqrt(mean_squared_error(y_test, y_pred))
-    print("Features used:", list(X.columns))
     print("R²:", r2_score(y_test, y_pred))
     print("RMSE:", rmse)
 
-    # Save model, imputer, and features
+    # Cross-validation
+    scores = cross_val_score(model, X_pca, y, cv=5, scoring='r2')
+    print("Cross-validated R²:", scores.mean())
+
+    # Save everything needed for inference
     joblib.dump(model, f"models/{pos}_linear_model.joblib")
     joblib.dump(imputer, f"models/{pos}_imputer.joblib")
-    joblib.dump(features, f"models/{pos}_features.joblib")
-    print(f"Saved model, imputer, and features for {pos} to models/")
+    joblib.dump(scaler, f"models/{pos}_scaler.joblib")
+    joblib.dump(pca, f"models/{pos}_pca.joblib")
+    print(f"Saved model, imputer, scaler, and PCA for {pos} to models/")
 
 # Now, in the future, you can load these with:
 # model = joblib.load("models/QB_linear_model.joblib")
 # imputer = joblib.load("models/QB_imputer.joblib")
-# features = joblib.load("models/QB_features.joblib")
+# scaler = joblib.load("models/QB_scaler.joblib")
+# pca = joblib.load("models/QB_pca.joblib")
+
+project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
