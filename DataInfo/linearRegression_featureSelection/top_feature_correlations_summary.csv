@@ -1,0 +1,21 @@
+Position,Feature,CorrelationWithTarget
+
+QB,Passing Yards (Advanced),0.8864879607138578
+QB,Air Yards,0.8768340308687603
+QB,Completions 10+ Yards,0.8589628674454826
+QB,QB Rating,0.8535710597330063
+
+RB,relevent_snaps_played,0.9096302483287685
+RB,Fantasy Points/Game,0.8807040772396756
+RB,Rushing Yards (Advanced),0.8410236440546469
+RB,Yards Before Contact,0.8289106011499003
+
+WR,Fantasy Points/Game,0.8924502616649586
+WR,Receptions (Advanced),0.8448073879392701
+WR,receiving_yards,0.8325477533544449
+WR,Targets (Advanced),0.8261315936156853
+
+TE,Receiving Yards (Advanced),0.9330261425253925
+TE,Fantasy Points/Game,0.9020845804181932
+TE,Receptions 10+ Yards,0.897717707014268
+TE,Receptions (Advanced),0.889410805891307
