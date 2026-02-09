@@ -1,5 +1,5 @@
 # Fantasy Analytics Project
-  ##2017 RB DATA IN UNAVAILABLE. ISSUE WHEN CLEANING DATA TOO LAZY TO FIX*************
+  ##2017 RB DATA IN UNAVAILABLE. ISSUE WHEN CLEANING DATA*************
 
 ## Overview
 The Fantasy Analytics Project is designed to analyze and visualize NFL statistics, providing insights for fantasy football enthusiasts. This project pulls real NFL data, processes it, and generates visualizations to aid in decision-making.
