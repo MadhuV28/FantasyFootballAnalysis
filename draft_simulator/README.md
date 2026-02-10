@@ -1,0 +1,3 @@
+in this file, i am writing observations on what our league drafted vs what the current (initial) simulator recommended for each pick. Then I wiull give observations on what I pickd for my team vs what the simulator recommended to see if it was better than me.
+
+Honestly, at this point, the smulator is a good outline of what to follow, but it was about the same with what i drafted.  the free agents i pciked up over the coruse fo the season wouldve largely been the same.  simulation chose dj moore who was aweful but wanted achane who was great.
