@@ -11,10 +11,10 @@ st.markdown("<h2 style='text-align: center; font-size: 1.2rem;'>Fantasy Analytic
 # --- Load your position-specific feature correlations ---
 # Example: Replace with your actual loading logic
 correlations = {
-    "QB": pd.read_csv("/Users/mvuyyuru/FantasyAnalyticsProject/gui_app/gui/scripts/ModelingAnalysis/PosSpecific/QB_feature_correlations.csv"),
-    "RB": pd.read_csv("/Users/mvuyyuru/FantasyAnalyticsProject/gui_app/gui/scripts/ModelingAnalysis/PosSpecific/RB_feature_correlations.csv"),
-    "WR": pd.read_csv("/Users/mvuyyuru/FantasyAnalyticsProject/gui_app/gui/scripts/ModelingAnalysis/PosSpecific/WR_feature_correlations.csv"),
-    "TE": pd.read_csv("/Users/mvuyyuru/FantasyAnalyticsProject/gui_app/gui/scripts/ModelingAnalysis/PosSpecific/TE_feature_correlations.csv"),
+    "QB": pd.read_csv("gui_app/gui/data/QB_feature_correlations.csv"),
+    "RB": pd.read_csv("gui_app/gui/data/RB_feature_correlations.csv"),
+    "WR": pd.read_csv("gui_app/gui/data/WR_feature_correlations.csv"),
+    "TE": pd.read_csv("gui_app/gui/data/TE_feature_correlations.csv"),
 }
 
 st.markdown("## Feature Correlations by Position")
