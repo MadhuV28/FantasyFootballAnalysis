@@ -23,6 +23,8 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 from sklearn.ensemble import RandomForestRegressor
 from xgboost import XGBRegressor
+import shap
+import matplotlib.pyplot as plt
 
 print("Current working directory:", os.getcwd())
 
@@ -186,6 +188,41 @@ for pos in positions:
 
     # Save XGBoost model
     joblib.dump(xgb_best, f"models/{pos}_xgboost_model.joblib")
+
+    # --- SHAP Explainability ---
+    # Only run SHAP for tree-based models (RandomForest, XGBoost) and if enough data
+    shap_dir = "visualizations"
+    os.makedirs(shap_dir, exist_ok=True)
+    if X_pca.shape[1] > 1 and len(X_pca) > 10:
+        # RandomForest SHAP
+        try:
+            explainer_rf = shap.Explainer(rf_best, X_pca)
+            shap_values_rf = explainer_rf(X_pca)
+            shap.summary_plot(
+                shap_values_rf, X_pca, show=False,
+                feature_names=[f"PCA_{i+1}" for i in range(X_pca.shape[1])]
+            )
+            plt.title(f"{pos} RandomForest SHAP Feature Importance")
+            plt.savefig(f"{shap_dir}/{pos}_RandomForest_shap_summary.png")
+            plt.close()
+            print(f"Saved SHAP summary plot for {pos} RandomForest to {shap_dir}/{pos}_RandomForest_shap_summary.png")
+        except Exception as e:
+            print(f"SHAP explainability failed for {pos} RandomForest: {e}")
+
+        # XGBoost SHAP
+        try:
+            explainer_xgb = shap.Explainer(xgb_best, X_pca)
+            shap_values_xgb = explainer_xgb(X_pca)
+            shap.summary_plot(
+                shap_values_xgb, X_pca, show=False,
+                feature_names=[f"PCA_{i+1}" for i in range(X_pca.shape[1])]
+            )
+            plt.title(f"{pos} XGBoost SHAP Feature Importance")
+            plt.savefig(f"{shap_dir}/{pos}_XGBoost_shap_summary.png")
+            plt.close()
+            print(f"Saved SHAP summary plot for {pos} XGBoost to {shap_dir}/{pos}_XGBoost_shap_summary.png")
+        except Exception as e:
+            print(f"SHAP explainability failed for {pos} XGBoost: {e}")
 
     # Save all results for this position
     results.append({

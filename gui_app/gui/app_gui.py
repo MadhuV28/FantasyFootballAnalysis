@@ -7,7 +7,6 @@ import mplcursors
 import os
 import matplotlib
 matplotlib.use('TkAgg')
-
 df = pd.read_csv('/Users/mvuyyuru/FantasyAnalyticsProject/DataInfo/pos_combined_year/modeling_final_enriched.csv')
 
 # Clean and convert all percentage columns to integer (rounded)

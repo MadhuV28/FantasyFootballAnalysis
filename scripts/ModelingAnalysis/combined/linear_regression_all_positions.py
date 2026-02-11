@@ -19,6 +19,9 @@ import numpy as np
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
+import shap
+import matplotlib.pyplot as plt
+import plotly.express as px
 
 df = pd.read_csv('/Users/mvuyyuru/FantasyAnalyticsProject/DataInfo/pos_combined_year/modeling_final_enriched.csv')
 
@@ -106,6 +109,25 @@ for pos in positions:
             "CV_R2": cv_r2
         })
 
+        # --- SHAP Explainability ---
+        # Only run SHAP for tree-based models (RandomForest, XGBoost) and if enough data
+        if model_name in ["RandomForest", "XGBoost"] and X_pca.shape[1] > 1 and len(X_pca) > 10:
+            try:
+                explainer = shap.Explainer(model, X_pca)
+                shap_values = explainer(X_pca)
+                shap.summary_plot(
+                    shap_values, X_pca, show=False,
+                    feature_names=[f"PCA_{i+1}" for i in range(X_pca.shape[1])]
+                )
+                shap_dir = "visualizations"
+                os.makedirs(shap_dir, exist_ok=True)
+                plt.title(f"{pos} {model_name} SHAP Feature Importance")
+                plt.savefig(f"{shap_dir}/{pos}_{model_name}_shap_summary.png")
+                plt.close()
+                print(f"Saved SHAP summary plot for {pos} {model_name} to {shap_dir}/{pos}_{model_name}_shap_summary.png")
+            except Exception as e:
+                print(f"SHAP explainability failed for {pos} {model_name}: {e}")
+
 # Save results to CSV
 output_dir = "/Users/mvuyyuru/FantasyAnalyticsProject/DataInfo/linearRegression"
 os.makedirs(output_dir, exist_ok=True)
@@ -123,3 +145,83 @@ print(f"\nSaved all model results to {output_csv}")
 rb_df = df[df['Position'] == 'RB']
 # Now, after you see the output, update the next line with the correct column name:
 rb_stats = rb_df[['Player', 'Year', 'Games Played', 'Fantasy Points', 'Carries', 'Rushing Yards', 'Rushing TD', 'Receptions', 'receiving_yards', 'Receiving TD (Basic)']]
+
+# --- SHAP Value Visualization ---
+# After computing shap_values for a specific model and position, visualize SHAP values against PCA components
+for pos in positions:
+    print(f"\n--- {pos} SHAP Value Visualization ---")
+    pos_df = df[df['Position'] == pos].copy()
+    features = [f for f in features_dict[pos] if f in pos_df.columns]
+    features = [f for f in features if not pos_df[f].isna().all()]
+    min_non_nan = int(0.3 * len(pos_df))
+    features = [f for f in features if pos_df[f].notna().sum() >= min_non_nan]
+    if not features:
+        print(f"All features are empty for {pos}")
+        continue
+    for col in features:
+        pos_df[col] = pos_df[col].astype(str).str.replace(',', '').replace('', 'nan').astype(float)
+    if 'player_id' in pos_df.columns and 'Year' in pos_df.columns:
+        pos_df = pos_df.drop_duplicates(subset=['player_id', 'Year'])
+    X = pos_df[features]
+    y = pos_df[target]
+    X = pd.DataFrame(imputer.fit_transform(X), columns=features)
+    y = y.fillna(y.mean())
+    if len(X) < 5:
+        print("Not enough data for", pos)
+        continue
+
+    # Standardize
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(X)
+
+    # PCA
+    pca = PCA(n_components=0.95, svd_solver='full')
+    X_pca = pca.fit_transform(X_scaled)
+    print(f"PCA: Reduced from {X.shape[1]} to {X_pca.shape[1]} components.")
+
+    models = {
+        "LinearRegression": LinearRegression(),
+        "RandomForest": RandomForestRegressor(n_estimators=100, random_state=42, n_jobs=2),
+        "XGBoost": XGBRegressor(n_estimators=100, random_state=42, n_jobs=2, verbosity=0)
+    }
+
+    for model_name, model in models.items():
+        X_train, X_test, y_train, y_test = train_test_split(X_pca, y, test_size=0.2, random_state=42)
+        model.fit(X_train, y_train)
+        y_pred = model.predict(X_test)
+        rmse = np.sqrt(mean_squared_error(y_test, y_pred))
+        r2 = r2_score(y_test, y_pred)
+
+        # Warn if sample size is too small for cross-validation
+        if len(X_pca) < 6:
+            print(f"WARNING: Not enough samples for reliable 5-fold cross-validation for {pos} - {model_name}.")
+            cv_r2 = float('nan')
+        else:
+            cv_r2 = cross_val_score(model, X_pca, y, cv=5, scoring='r2', n_jobs=1).mean()
+        print(f"{model_name}: R²={r2:.4f}, RMSE={rmse:.4f}, Cross-validated R²={cv_r2:.4f}")
+
+        # --- SHAP Value Visualization ---
+        # Only run for tree-based models (RandomForest, XGBoost) and if enough data
+        if model_name in ["RandomForest", "XGBoost"] and X_pca.shape[1] > 1 and len(X_pca) > 10:
+            try:
+                explainer = shap.Explainer(model, X_pca)
+                shap_values = explainer(X_pca)
+
+                # Plotly visualization
+                component = 0  # index of the component
+                shap_vals = shap_values.values[:, component]
+                feature_vals = X.iloc[:, component]
+                players = df['Player']  # or whatever identifier you have
+                hover_names = pos_df['Player'].iloc[:len(X_pca)].values  # Ensure this matches X_pca's length
+
+                fig = px.scatter(
+                    x=shap_vals,
+                    y=feature_vals,
+                    hover_name=hover_names,
+                    labels={'x': 'SHAP value', 'y': 'Component value'},
+                    title='SHAP Value vs Component Value (hover for player)'
+                )
+                fig.show()
+
+            except Exception as e:
+                print(f"SHAP value visualization failed for {pos} {model_name}: {e}")
